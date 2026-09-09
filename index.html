@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ICONIC - Sistema de Agendamiento</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Librería para calendario: fullcalendar -->
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css' rel='stylesheet' />
+</head>
+<body>
+    <div class="app">
+        <!-- HEADER -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <h1>✦ ICONIC ✦</h1>
+                    <p>Beauty Services Management</p>
+                </div>
+                <div class="header-right">
+                    <span id="userDisplay">Admin</span>
+                    <button class="btn-logout" onclick="logout()">Salir</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- TABS PRINCIPALES -->
+        <nav class="tabs">
+            <button class="tab-btn active" onclick="switchTab('booking')">🗓️ Agendar</button>
+            <button class="tab-btn" onclick="switchTab('calendar')">📅 Calendario</button>
+            <button class="tab-btn" onclick="switchTab('admin')">⚙️ Panel Admin</button>
+        </nav>
+
+        <!-- CONTENIDO DE TABS -->
+        <main class="main-content">
+            
+            <!-- TAB 1: BOOKING (Para Clientes) -->
+            <section id="booking" class="tab-content active">
+                <div class="container">
+                    <h2>Reservar una Cita</h2>
+                    
+                    <!-- Mensaje de éxito -->
+                    <div id="successMsg" class="alert alert-success" style="display: none;">
+                        ✓ ¡Cita agendada! Recibirás confirmación por WhatsApp
+                    </div>
+
+                    <!-- Formulario -->
+                    <form id="bookingForm" class="form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Nombre Completo *</label>
+                                <input type="text" id="clientName" required placeholder="Tu nombre">
+                            </div>
+                            <div class="form-group">
+                                <label>WhatsApp *</label>
+                                <input type="tel" id="clientPhone" required placeholder="+593 99 123 4567">
+                            </div>
+                        </div>
+
+                        <!-- SELECCIÓN DE SERVICIO -->
+                        <div class="form-group full">
+                            <label>Servicio *</label>
+                            <div class="service-tabs">
+                                <button type="button" class="service-tab-btn active" onclick="showServiceCategory('cejas')">Cejas</button>
+                                <button type="button" class="service-tab-btn" onclick="showServiceCategory('pestanas')">Pestañas</button>
+                                <button type="button" class="service-tab-btn" onclick="showServiceCategory('manicure')">Manicure</button>
+                                <button type="button" class="service-tab-btn" onclick="showServiceCategory('pedicure')">Pedicure</button>
+                            </div>
+                            <div id="servicesList" class="service-grid"></div>
+                        </div>
+
+                        <!-- FECHA -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Fecha *</label>
+                                <input type="date" id="appointmentDate" required onchange="updateAvailableHours()">
+                            </div>
+                        </div>
+
+                        <!-- HORARIOS DISPONIBLES -->
+                        <div class="form-group full">
+                            <label>Horario Disponible *</label>
+                            <div id="timeSlots" class="time-slots"></div>
+                        </div>
+
+                        <!-- DURACIÓN ESTIMADA -->
+                        <div class="form-group full">
+                            <label>Duración Estimada</label>
+                            <input type="text" id="estimatedDuration" readonly style="background: #f0f0f0; cursor: not-allowed;">
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Confirmar Cita</button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- TAB 2: CALENDAR (Calendario Completo) -->
+            <section id="calendar" class="tab-content">
+                <div class="container">
+                    <h2>Calendario de Citas</h2>
+                    <div class="calendar-controls">
+                        <button class="btn btn-secondary" onclick="syncGoogleCalendar()">📱 Sincronizar con Google</button>
+                        <button class="btn btn-secondary" onclick="exportToICS()">📥 Descargar ICS</button>
+                    </div>
+                    <div id="calendar-container" class="calendar-wrapper"></div>
+                </div>
+            </section>
+
+            <!-- TAB 3: ADMIN PANEL -->
+            <section id="admin" class="tab-content">
+                <div class="container">
+                    <h2>Panel de Administración</h2>
+                    
+                    <!-- Estadísticas -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number" id="totalAppointments">0</div>
+                            <div class="stat-label">Citas Totales</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="todayAppointments">0</div>
+                            <div class="stat-label">Hoy</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="totalRevenue">$0</div>
+                            <div class="stat-label">Ingresos</div>
+                        </div>
+                    </div>
+
+                    <!-- Configuración de Horarios -->
+                    <div class="admin-section">
+                        <h3>Configurar Horarios de Atención</h3>
+                        <div class="schedule-config">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Hora de Inicio</label>
+                                    <input type="time" id="startHour" value="09:00">
+                                </div>
+                                <div class="form-group">
+                                    <label>Hora de Cierre</label>
+                                    <input type="time" id="endHour" value="20:00">
+                                </div>
+                                <div class="form-group">
+                                    <label>Intervalo (min)</label>
+                                    <input type="number" id="timeInterval" value="30" min="15" max="60">
+                                </div>
+                                <div class="form-group">
+                                    <label>Días no laborales</label>
+                                    <input type="text" id="nonWorkDays" placeholder="Ej: lunes,domingo">
+                                </div>
+                            </div>
+                            <button class="btn btn-primary" onclick="saveScheduleConfig()">Guardar Configuración</button>
+                        </div>
+                    </div>
+
+                    <!-- Lista de Citas -->
+                    <div class="admin-section">
+                        <h3>Citas Agendadas</h3>
+                        <div class="appointments-filters">
+                            <select id="filterStatus" onchange="filterAppointments()">
+                                <option value="">Todos los estados</option>
+                                <option value="confirmada">Confirmada</option>
+                                <option value="completada">Completada</option>
+                                <option value="cancelada">Cancelada</option>
+                            </select>
+                        </div>
+                        <div id="appointmentsList" class="appointments-list"></div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script src="config.js"></script>
+    <script src="database.js"></script>
+    <script src="notifications.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
